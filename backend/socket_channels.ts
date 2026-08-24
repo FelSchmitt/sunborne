@@ -115,7 +115,7 @@ export async function joinWaitingQueue(identifiers: playerIdentifiers, waitingQu
                     )),
 
                     abilities: card.abilities.map(ability => (
-                        { functionReferences: ability.functionReferences, trigger: ability.trigger, replace_default_event: ability.replace_default_event }
+                        { instructions: ability.instructions, trigger: ability.trigger, replace_default_event: ability.replace_default_event }
                     )),
 
                     custom_properties: [],

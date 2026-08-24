@@ -4,7 +4,7 @@ import { abilitiesFunctions } from './abilities_functions'
 
 export type GeneratedEvent = {
     eventResult: EventResult
-    function?: (...args: any[]) => any
+    function?: EventEmitter
     player?: MatchPlayer
     opponent?: MatchPlayer
     source?: GameCard
@@ -162,7 +162,7 @@ const RITUAL_SPELL_ACTIONS: EventEmitter[][] = [
             const events: GeneratedEvent[] = []
 
             if (descriptorOnly) {
-                events.push({ eventResult: 'event', player: actingPlayer, function: RITUAL_SPELL_ACTIONS[3][0] })
+                events.push({ eventResult: 'any', player: actingPlayer, function: RITUAL_SPELL_ACTIONS[3][0] })
             }
             else {
                 event.player.soul_vessel_life += constants.BLOODBIND_HEAL_AMOUNT

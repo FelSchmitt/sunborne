@@ -1,3 +1,5 @@
+import { GeneratedEvent } from "./match_handlers/events_queue"
+
 export type playerIdentifiers = {
     id: string
     socket_id: string
@@ -18,13 +20,27 @@ export type RitualSpellName = 'bloodbind' | 'ashen_strike' | 'soul_harvest' | 'p
 
 export type StatusModifier = { value: number, source: string | GameCard }
 
-export type AbilityDescription = {
-    functionReferences: {
-        index: number,
-        matchArray: 'graveyard',
-        matchNumberProperty: 'action_die' | 'fate_die' | 'reversal_coin',
-        playerArray: 'deck' | 'hand_cards' | 'table_cards'
-    },
+export type ObjectKeyReference = keyof MatchObject | keyof MatchPlayer | keyof GameCard | keyof GeneratedEvent
+
+export type Instruction = {
+    functionIndex: number
+    property: [number, ...ObjectKeyReference[]]
+    conditions: {
+        operator: '<' | '>' | '&' | '|' | '=' | '!' | 'includes' | 'some'
+        operatorIndex: number
+        value1: any
+        value2: any
+        reference1: [number, ...ObjectKeyReference[]]
+        reference2: [number, ...ObjectKeyReference[]]
+        next: '&' | '|'
+    }[]
+    values: any[]
+    useValuesFrom: 'instruction' | 'savedValues'
+    useValuesRange: [number, number?]
+}
+
+export type AbilityDescriptors = {
+    instructions: Instruction[],
     trigger: EventResult,
     replace_default_event: boolean
 }
@@ -42,7 +58,7 @@ export type GameCard = {
     attack_modifiers: StatusModifier[]
     can_attack: boolean
     classes: { name: string, functionIndex?: number, trigger?: EventResult }[]
-    abilities: AbilityDescription[]
+    abilities: AbilityDescriptors[]
     custom_properties: { persist: boolean, source?: GameCard, properties: any[] }[] // used by the special abilities of itself and other cards
     rarity: CardRarity
     is_hero?: boolean
@@ -126,5 +142,6 @@ export type MoveRequest = {
 
 
 export type EventResult = 'turn_changed' | 'summoned' | 'died' | 'ressurected' | 'attacked' | 'damaged' | 'card_drawn' |
-    'won_match' | 'ability_triggered' | 'chose_hero' | 'chose_card' | 'dice_and_coin_reset' | 'chaos_effects_applied' | 'chaos_effects_reset'
-    | 'card_sacrificed' | 'spell_cast' | 'attacked_life_pool' | 'eclipse_timer_countdown' | 'eclipse_began' | 'eclipse_ended' | 'minion_enabled_attack' | 'event'
+    'won_match' | 'ability_triggered' | 'chose_hero' | 'chose_card' | 'dice_and_coin_reset' | 'chaos_effects_applied' |
+    'chaos_effects_reset' | 'card_sacrificed' | 'spell_cast' | 'attacked_life_pool' | 'eclipse_timer_countdown' |
+    'eclipse_began' | 'eclipse_ended' | 'minion_enabled_attack' | 'any'

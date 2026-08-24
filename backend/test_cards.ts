@@ -1,4 +1,4 @@
-import { CardRarity, EventResult, AbilityDescription } from "./types"
+import { CardRarity, EventResult, AbilityDescriptors } from "./types"
 
 type TestCardObject = {
     card_id: string
@@ -6,7 +6,7 @@ type TestCardObject = {
     base_life: number
     attack_damage: number
     classes: { name: string, functionIndex?: number, trigger?: EventResult }[]
-    abilities: AbilityDescription[]
+    abilities: AbilityDescriptors[]
     rarity: CardRarity
     description?: string
 }
@@ -48,7 +48,7 @@ export const testCards: TestCardObject[] = [
         card_id: 'primal_rhino',
         mana_cost: 1,
         base_life: 3,
-        attack_damage: 2,
+        attack_damage: 3,
         classes: [{ name: 'beast' }, { name: 'primitive' }],
         abilities: [],
         rarity: 'common'
@@ -71,13 +71,13 @@ export const testCards: TestCardObject[] = [
         classes: [{ name: 'colossus', trigger: 'turn_changed', functionIndex: -1 }, { name: 'verdant' }],
         abilities: [],
         rarity: 'colossal',
-        description: 'if receives nearly lethal damage, the attacker lose 3 attack points and lose 1 health every turn for 6 turns. this ability activates only once.'
+        description: 'if receives nearly lethal damage, the attacker lose 3 attack and lose 1 health every turn for 6 turns. this ability activates only once.'
     },
     {
         card_id: 'eclipse_eye',
         mana_cost: 5,
         base_life: 3,
-        attack_damage: 3,
+        attack_damage: 2,
         classes: [],
         abilities: [],
         rarity: 'legendary',
@@ -85,11 +85,39 @@ export const testCards: TestCardObject[] = [
     },
     {
         card_id: 'great_storm_ravager',
-        mana_cost: 5,
-        base_life: 3,
-        attack_damage: 3,
+        mana_cost: 7,
+        base_life: 7,
+        attack_damage: 6,
         classes: [{ name: 'titan', trigger: 'damaged', functionIndex: -1 }, { name: 'elemental' }],
         abilities: [],
         rarity: 'titanic',
+    },
+    {
+        card_id: 'infernal_taurus',
+        mana_cost: 3,
+        base_life: 5,
+        attack_damage: 3,
+        classes: [{ name: 'infernal' }, { name: 'beast' }],
+        abilities: [],
+        rarity: 'rare',
+        description: 'every time its attacked, gets increasingly more enraged until enters the fury mode for 3 turns: 3x more attack and health'
+    },
+    {
+        card_id: 'war_carnage_god',
+        mana_cost: 4,
+        base_life: 12,
+        attack_damage: 6,
+        classes: [{ name: 'colossus', trigger: 'turn_changed', functionIndex: -1 }],
+        abilities: [],
+        rarity: 'colossal',
+    },
+    {
+        card_id: 'balthazar_the_wizard',
+        mana_cost: 5,
+        base_life: 2,
+        attack_damage: 2,
+        classes: [{ name: 'human' }, { name: 'wizard' }],
+        abilities: [],
+        rarity: 'epic',
     },
 ]
