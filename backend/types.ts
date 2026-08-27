@@ -20,23 +20,41 @@ export type RitualSpellName = 'bloodbind' | 'ashen_strike' | 'soul_harvest' | 'p
 
 export type StatusModifier = { value: number, source: string | GameCard }
 
-export type ObjectKeyReference = keyof MatchObject | keyof MatchPlayer | keyof GameCard | keyof GeneratedEvent
+export type ObjectKeyReference = keyof MatchObject | keyof MatchPlayer | keyof GameCard | keyof GeneratedEvent | number
+
+export type ObjectPath = ObjectKeyReference[]
 
 export type Instruction = {
     functionIndex: number
-    property: [number, ...ObjectKeyReference[]]
+    variableIndex: number
+    property: ObjectPath
     conditions: {
-        operator: '<' | '>' | '&' | '|' | '=' | '!' | 'includes' | 'some'
         operatorIndex: number
         value1: any
         value2: any
-        reference1: [number, ...ObjectKeyReference[]]
-        reference2: [number, ...ObjectKeyReference[]]
+        value3: any
+        variableIndex1: number
+        variableIndex2: number
+        variableIndex3: number
+        reference1: ObjectPath
+        reference2: ObjectPath
+        reference3: ObjectPath
+        next: '&' | '|'
+    }[]
+    iterationFilters: {//always refers to the current element or one of its properties when iterating over an array
+        operatorIndex: number
+        elementPathsIndex: number
+        value1: any
+        value2: any
+        value3: any
+        reference1: ObjectPath
+        reference2: ObjectPath
+        reference3: ObjectPath
         next: '&' | '|'
     }[]
     values: any[]
     useValuesFrom: 'instruction' | 'savedValues'
-    useValuesRange: [number, number?]
+    useValuesRange: [number, number]
 }
 
 export type AbilityDescriptors = {
@@ -57,7 +75,7 @@ export type GameCard = {
     attack_damage: number
     attack_modifiers: StatusModifier[]
     can_attack: boolean
-    classes: { name: string, functionIndex?: number, trigger?: EventResult }[]
+    classes: { name: string, function_index?: number, trigger?: EventResult }[]
     abilities: AbilityDescriptors[]
     custom_properties: { persist: boolean, source?: GameCard, properties: any[] }[] // used by the special abilities of itself and other cards
     rarity: CardRarity
