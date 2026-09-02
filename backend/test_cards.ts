@@ -64,14 +64,14 @@ export const testCards: TestCardObject[] = [
         description: 'when summoned, deals 2 damage to all enemies. while on table, opponent cards cost 2 more mana to summon'
     },
     {
-        card_id: 'micelord',
+        card_id: 'moldlord',
         mana_cost: 6,
         base_life: 8,
         attack_damage: 5,
         classes: [{ name: 'colossus', trigger: 'turn_changed', functionIndex: -1 }, { name: 'verdant' }],
         abilities: [],
         rarity: 'colossal',
-        description: 'if receives nearly lethal damage, the attacker lose 3 attack and lose 1 health every turn for 6 turns. this ability activates only once.'
+        description: 'if receives nearly lethal damage, the attacker lose 3 attack and 1 health every turn for 6 turns. this ability activates only once.'
     },
     {
         card_id: 'eclipse_eye',

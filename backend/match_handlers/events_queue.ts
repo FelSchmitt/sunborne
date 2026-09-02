@@ -200,7 +200,10 @@ function damageSoulVesselAndDepleteEnergy(player: MatchPlayer, opponent: MatchPl
 
 
 const endTurnAndStartNext: EventEmitter = (match, actingPlayer, opponent, request, descriptorOnly, event) => {
-    if (descriptorOnly) return [{ eventResult: 'turn_changed', function: endTurnAndStartNext }]
+    if (descriptorOnly) return [
+        { eventResult: 'turn_changed', function: endTurnAndStartNext },
+        { eventResult: 'card_drawn', player: actingPlayer }
+    ]
 
     match.current_turn_player = match.current_turn_player === 'player1' ? 'player2' : 'player1'
 
@@ -220,6 +223,31 @@ const endTurnAndStartNext: EventEmitter = (match, actingPlayer, opponent, reques
     }
 
     return []
+}
+
+
+
+const drawCard: EventEmitter = (match, actingPlayer, opponent, request, descriptorOnly, event) => {
+    const events: GeneratedEvent[] = []
+    const player = match[match.current_turn_player]
+
+    if (descriptorOnly) {
+        events.push({ eventResult: 'card_drawn', source: player.deck[0], player: player })
+
+        if (match.action_die === constants.ACTION_DIE_EXTRA_CARD) {
+            events.push({ eventResult: 'card_drawn', source: player.deck[1], player: player })
+        }
+    }
+    else {
+        if (match.action_die === constants.ACTION_DIE_EXTRA_CARD) {
+            player.hand_cards.push(...player.deck.splice(0, 2))
+        }
+        else {
+            player.hand_cards.push(...player.deck.splice(0, 1))
+        }
+    }
+
+    return events
 }
 
 
@@ -599,8 +627,8 @@ const checkForWinnerByDepletedLifePool: EventEmitter = (match, actingPlayer, opp
 
 
 const checkForWinnerByJudgeVerdict: EventEmitter = (match, actingPlayer, opponent, request, descriptorOnly, event) => {
-    const playerStreaks = actingPlayer.favorable_rolls_streak as number
-    const opponentStreaks = opponent.favorable_rolls_streak as number
+    const playerStreaks = actingPlayer.favorable_rolls_streak
+    const opponentStreaks = opponent.favorable_rolls_streak
 
     if (playerStreaks >= 3) {
         if (!descriptorOnly) { match.winner_id = actingPlayer.id }
@@ -703,7 +731,7 @@ const castRitualSpell: EventEmitter = (match, actingPlayer, opponent, request, d
     if (energy >= constants.GRAND_RITUAL_ENERGY_THRESHOLD) {
         const randomIndex = Math.round(Math.random())
 
-        RITUAL_SPELL_ACTIONS[0][randomIndex](match, actingPlayer, opponent, request, descriptorOnly, event)
+        events.push(...RITUAL_SPELL_ACTIONS[0][randomIndex](match, actingPlayer, opponent, request, descriptorOnly, event))
 
         damageSoulVesselAndDepleteEnergy(actingPlayer, opponent, constants.GRAND_RITUAL_ENERGY_THRESHOLD, constants.GRAND_RITUAL_DAMAGE)
     }
@@ -711,7 +739,7 @@ const castRitualSpell: EventEmitter = (match, actingPlayer, opponent, request, d
     else if (energy >= constants.MAJOR_RITUAL_ENERGY_THRESHOLD) {
         const randomIndex = Math.round(Math.random())
 
-        RITUAL_SPELL_ACTIONS[1][randomIndex](match, actingPlayer, opponent, request, descriptorOnly, event)
+        events.push(...RITUAL_SPELL_ACTIONS[1][randomIndex](match, actingPlayer, opponent, request, descriptorOnly, event))
 
         damageSoulVesselAndDepleteEnergy(actingPlayer, opponent, constants.MAJOR_RITUAL_ENERGY_THRESHOLD, constants.MAJOR_RITUAL_DAMAGE)
     }
@@ -719,7 +747,7 @@ const castRitualSpell: EventEmitter = (match, actingPlayer, opponent, request, d
     else if (energy >= constants.MODERATE_RITUAL_ENERGY_THRESHOLD) {
         const randomIndex = Math.floor(Math.random() * 3)
 
-        RITUAL_SPELL_ACTIONS[2][randomIndex](match, actingPlayer, opponent, request, descriptorOnly, event)
+        events.push(...RITUAL_SPELL_ACTIONS[2][randomIndex](match, actingPlayer, opponent, request, descriptorOnly, event))
 
         damageSoulVesselAndDepleteEnergy(actingPlayer, opponent, constants.MODERATE_RITUAL_ENERGY_THRESHOLD, constants.MODERATE_RITUAL_DAMAGE)
     }
@@ -727,7 +755,7 @@ const castRitualSpell: EventEmitter = (match, actingPlayer, opponent, request, d
     else if (energy >= constants.MINOR_RITUAL_ENERGY_THRESHOLD) {
         const randomIndex = Math.round(Math.random())
 
-        RITUAL_SPELL_ACTIONS[3][randomIndex](match, actingPlayer, opponent, request, descriptorOnly, event)
+        events.push(...RITUAL_SPELL_ACTIONS[3][randomIndex](match, actingPlayer, opponent, request, descriptorOnly, event))
 
         damageSoulVesselAndDepleteEnergy(actingPlayer, opponent, constants.MINOR_RITUAL_ENERGY_THRESHOLD, constants.MINOR_RITUAL_DAMAGE)
     }
@@ -863,33 +891,33 @@ function executeFunctions(match: MatchObject, player: MatchPlayer, opponent: Mat
 const moveEvents: Partial<Record<`${GameMode}:${MoveAction}`, EventEmitter[]>> = {
     'classic:throw_onto_table': [summonMinion],
     'classic:attack_minion': [attackMinion, removeDeadMinions, checkForWinnerByDefeatedMinions],
-    'classic:end_turn': [endTurnAndStartNext, resetMinionsCanAttack],
+    'classic:end_turn': [endTurnAndStartNext, resetMinionsCanAttack, drawCard],
     'classic:choose_hero_minion': [setHeroMinion],
 
     'destiny:throw_onto_table': [summonMinion],
     'destiny:attack_minion': [attackMinion, removeDeadMinions, checkForWinnerByDefeatedMinions, checkForWinnerByJudgeVerdict],
-    'destiny:end_turn': [resetDiceAndCoin, destinyTurns, resetMinionsCanAttack],
+    'destiny:end_turn': [resetDiceAndCoin, destinyTurns, resetMinionsCanAttack, drawCard],
     'destiny:choose_hero_minion': [setHeroMinion],
 
     'chaos:throw_onto_table': [summonMinion],
     'chaos:attack_minion': [attackMinion, removeDeadMinions],
-    'chaos:end_turn': [resetChaosEffects, endTurnAndStartNext, resetMinionsCanAttack, applyChaosEffects, removeDeadMinions, checkForWinnerByDefeatedMinions],
+    'chaos:end_turn': [resetChaosEffects, endTurnAndStartNext, resetMinionsCanAttack, applyChaosEffects, removeDeadMinions, checkForWinnerByDefeatedMinions, drawCard],
 
     'ritual:throw_onto_table': [summonMinion],
     'ritual:attack_minion': [attackMinion, removeDeadMinions],
-    'ritual:end_turn': [endTurnAndStartNext, resetMinionsCanAttack],
+    'ritual:end_turn': [endTurnAndStartNext, resetMinionsCanAttack, drawCard],
     'ritual:sacrifice_card': [sacrificeCard],
     'ritual:cast_ritual_spell': [castRitualSpell, removeDeadMinions, checkForWinnerByDepletedLifePool],
 
     'dungeon_run:throw_onto_table': [summonMinion],
     'dungeon_run:attack_minion': [attackMinion, removeDeadMinions, checkForWinnerByDefeatedMinions],
-    'dungeon_run:end_turn': [endTurnAndStartNext, resetMinionsCanAttack],
+    'dungeon_run:end_turn': [endTurnAndStartNext, resetMinionsCanAttack, drawCard],
     'dungeon_run:choose_hero_minion': [setHeroMinion],
 
     'eclipse:throw_onto_table': [summonMinion],
     'eclipse:attack_minion': [attackMinion, removeDeadMinions, resetEclipseTimer],
     'eclipse:attack_life_pool': [attackLifePool, checkForWinnerByDepletedLifePool],
-    'eclipse:end_turn': [endTurnAndStartNext, updateEclipseTimer, resetMinionsCanAttack],
+    'eclipse:end_turn': [endTurnAndStartNext, updateEclipseTimer, resetMinionsCanAttack, drawCard],
 }
 
 // main dispatch
