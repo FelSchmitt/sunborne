@@ -19,7 +19,7 @@ const corsConfig = { origin: 'http://localhost:3000', credentials: true }
 export const pool = new Pool({
     user: process.env.USER,
     host: 'localhost',
-    database: 'ethercraft',
+    database: 'sunborne',
     password: process.env.DATABASE_PASSWORD,
     port: 5000,
     max: 20,

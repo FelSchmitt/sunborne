@@ -1,10 +1,10 @@
-<h1 align="center" style="font-size: 50px; font-weight: bold;" >EtherCraft</h1>
+<h1 align="center" style="font-size: 50px; font-weight: bold;" >Sunborne</h1>
 <br />
 <br />
 
 <h2 align="center">A Full Stack Project</h2>
 
-<p align="center">Ethercraft is a complete fantasy game about duels with an opponent in a board with cards (and a tavern background scenery), in a RPG style, that was heavily inspired by the original game <a style="font-weight: bold" href="https://hearthstone.blizzard.com/en-us">HEARTHSTONE</a> by Blizzard Entertainment.</p>
+<p align="center">Sunborne is a complete fantasy game about duels with an opponent in a board with cards, in a RPG style, that was heavily inspired by the original game <a style="font-weight: bold" href="https://hearthstone.blizzard.com/en-us">HEARTHSTONE</a> by Blizzard Entertainment.</p>
 <br />
 
 <h2>Main Features</h2>
@@ -60,10 +60,6 @@ side handles mainly the aesthetic part, that is the textures, 3D, sound effects 
 <br />
 
 <h1 align="center">Wanna Contribute to This Project?</h1>
-
-- The arts and images I make as original as possible, in a separate repository called 'ethercraft-arts', 
-with the Canvas API of the web. If you like to control the flow of the drawing with just code and math, I'd recommend 
-checking it out.
 
 - The 3D geometries of the game are modeled in Blender, and the setup of the geometries are saved in the `blender_projects` folder, and then exported as `.glb` archives in the `frontend/public/models` folder
 

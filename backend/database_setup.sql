@@ -1,4 +1,4 @@
-CREATE DATABASE ethercraft;
+CREATE DATABASE sunborne;
 
 -- CARDS
 

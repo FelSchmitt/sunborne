@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "EtherCraft",
+  title: "Sunborne",
   description: "A Complete RPG Strategic Board Card Game Project",
 }
 
