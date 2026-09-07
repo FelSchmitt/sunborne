@@ -8,10 +8,10 @@ export default function RegisterPage() {
 
     const data = new FormData(event.currentTarget)
 
-    const request = await fetch('http://localhost:3001/login/validatefields/newaccount', {
+    const request = await fetch('http://localhost:3001/register/validate/fields', {
       method: 'post',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ account_id: data.get('account_id'), password: data.get('password'), user_nickname: data.get('user_nickname') })
+      body: JSON.stringify({ id: data.get('account_id'), password: data.get('password'), nickname: data.get('user_nickname') })
     })
 
     const response = await request.json()
@@ -27,8 +27,8 @@ export default function RegisterPage() {
     const texts: string[][] = [
       [
         'This user ID already exists. Choose another',
-        'This user ID is too short. Must be 5 to 20 characters',
-        'This user ID is too long. Must be 5 to 20 characters'
+        'This user ID is too short. Must be 6 to 20 characters',
+        'This user ID is too long. Must be 6 to 20 characters'
       ],
       [
         'This password is too short. Must be 10 to 45 characters',
