@@ -127,7 +127,7 @@ export async function joinWaitingQueue(identifiers: playerIdentifiers, waitingQu
 
         const match = createMatch(playersIds, handsCards, matchId)
 
-        await redisConnection.json.set(matchId, '$', JSON.stringify(match))
+        await redisConnection.json.set(matchId, '$', match)
 
         socketServer.to([playersIds[0].socket_id, playersIds[1].socket_id]).socketsJoin(matchId)
     }

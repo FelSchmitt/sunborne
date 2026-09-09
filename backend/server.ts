@@ -1,9 +1,7 @@
 import express, { Request, Response } from 'express'
 import http from 'http'
 import cors from 'cors'
-const crypto = require('crypto')
 import cookieParser from 'cookie-parser'
-import jwt from 'jsonwebtoken'
 import { Server, Socket } from 'socket.io'
 import { createClient, RedisClientType } from 'redis'
 import dotenv from 'dotenv'
@@ -13,10 +11,10 @@ const nodemailer = require('nodemailer')
 import cron from 'node-cron'
 dotenv.config()
 
-import { verifyToken } from './middlewares'
+import { generateToken, validateToken } from './middlewares'
 import { playerIdentifiers } from './types'
 import * as channels from './socket_channels'
-import { serverMailMessage } from './email_message'
+import { serverMailMessage } from './middlewares'
 
 const corsConfig = { origin: 'http://localhost:3000', credentials: true }
 
@@ -55,7 +53,7 @@ expressServer.post('/register/validate/fields', async (req: Request, res: Respon
     try {
         const messages: { code: [number, number], message: string }[] = []
 
-        const idQuery = await pool.query(`SELECT account_id FROM USERS WHERE account_id = $1`, [req.body.account_id])
+        const idQuery = await pool.query(`SELECT account_id FROM USERS WHERE account_id = $1`, [req.body.id])
 
 
         if (idQuery.rows.length > 0) messages.push({ code: [0, 0], message: 'account id already exists' })
@@ -76,26 +74,18 @@ expressServer.post('/register/validate/fields', async (req: Request, res: Respon
             res.status(422).send({ messages: messages })
         }
         else {
-            const verifyCode = String.fromCharCode(...Array.from({ length: 8 }, () => 47 + crypto.randomInt(1, 76)))
+            const verifyCode = String.fromCharCode(...Array.from({ length: 8 }, () => 47 + Math.round(Math.random() * 75)))
             const passwordHash = await argon2.hash(req.body.password)
             const codeHash = await argon2.hash(verifyCode)
 
-            const unvalidatedUser = await pool.query(`INSERT INTO users (
-                account_id,
-                password_hash,
-                nickname,
-                register_date,
-                status,
-                activation_code) VALUES ($1, $2, $3, $4, $5, $6)`,
-                [
-                    req.body.account_id,
-                    passwordHash,
-                    req.body.user_nickname,
-                    new Date().toISOString().split('T')[0],
-                    'inactive',
-                    codeHash
-                ]
-            )
+            await redisClient.json.SET(`user_validation:${req.body.id}`, '$', {
+                code: codeHash,
+                attempts: 0,
+                id: req.body.id,
+                password: passwordHash,
+                nickname: req.body.nickname
+            })
+            await redisClient.EXPIRE(`user_validation:${req.body.id}`, 900)
 
             const info = await emailTransporter.sendMail({
                 from: process.env.EMAIL_FROM,
@@ -121,33 +111,54 @@ expressServer.post('/register/validate/fields', async (req: Request, res: Respon
 expressServer.post('/register/validate/activation', async (req: Request, res: Response) => {
     try {
         if (!req.body.code || !req.body.id) {
-            res.status(403).send({ message: 'missing credentials' })
+            res.status(401).send({ message: 'missing credentials' })
             return
         }
 
-        const query = await pool.query(`SELECT * FROM USERS where account_id = $1`, [req.body.id])
+        const account = await redisClient.json.GET(`user_validation:${req.body.id}`) as Record<string, any>
 
-        if (query.rows.length === 0) {
-            res.status(404).send({ message: 'register not found or expired' })
+        if (!account) {
+            res.status(404).send({ message: 'register not found, expired or is already validated' })
             return
         }
 
-        const codesMatch = await argon2.verify(query.rows[0].activation_code, req.body.code)
+        const codesMatch = await argon2.verify(account.code, req.body.code)
 
         if (!codesMatch) {
-            res.status(403).send({ message: 'invalid code' })
+            await redisClient.json.NUMINCRBY(`user_validation:${req.body.id}`, '$.attempts', 1)
+
+            if (account.attempts >= 5) {
+                res.status(410).send({ message: 'max attempts count reached' })
+                await redisClient.DEL([`user_validation:${req.body.id}`])
+            }
+            else { res.status(401).send({ message: 'invalid code' }) }
+
             return
         }
 
-        const activationQuery = await pool.query(
-            `UPDATE USERS SET status = 'active', activation_code = NULL, expire_time = NULL WHERE account_id = $1`, [req.body.id]
+        await pool.query(`INSERT INTO users (account_id, password_hash, nickname, register_date, status) 
+            VALUES ($1, $2, $3, $4, $5)`,
+            [
+                account.id,
+                account.password,
+                account.nickname,
+                new Date().toISOString().split('T')[0],
+                'active'
+            ]
         )
 
-        res.status(201).send(
+        await redisClient.DEL([`user_validation:${req.body.id}`])
+
+        const refreshToken = generateToken(account.id, 43_200)
+        const accessToken = generateToken(account.id, 20)
+
+        res.cookie('refreshAccess', refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 2_592_000_000 })
+        res.cookie('access', accessToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 1_200_000 })
+        res.send(
             {
                 message: 'account succcessfully validated',
-                account_id: query.rows[0].account_id,
-                user_nickname: query.rows[0].nickname
+                account_id: account.id,
+                user_nickname: account.nickname
             }
         )
     }
@@ -162,46 +173,40 @@ expressServer.post('/register/validate/activation', async (req: Request, res: Re
 expressServer.post('/login/validate', async (req: Request, res: Response) => {
     try {
         if (!req.body.account_id || !req.body.password) {
-            res.status(403).send({ message: 'missing credentials' })
+            res.status(401).send({ message: 'missing credentials' })
             return
         }
 
-        const messages: { code: number, message: string }[] = []
-        const query = await pool.query(`SELECT * FROM users WHERE account_id = $1 AND status != 'inactive'`, [req.body.account_id])
+        const query = await pool.query(`SELECT * FROM users WHERE account_id = $1`, [req.body.id])
 
         if (query.rows.length === 0) {
-            messages.push({ code: 0, message: 'user not found' })
+            res.status(404).send({ message: 'user not found' })
+            return
         }
 
         const passwordIsCorrect: boolean = await argon2.verify(query.rows[0].password_hash, req.body.password)
 
         if (!passwordIsCorrect) {
-            messages.push({ code: 1, message: 'password incorrect' })
-        }
-
-        if (messages.length > 0) {
-            res.status(422).send({ messages })
+            res.status(401).send({ message: 'password incorrect' })
             return
         }
 
-        const token = jwt.sign({ access_token: query.rows[0].access_token }, process.env.SECRET_KEY, { expiresIn: '10m' })
+        const refreshToken = generateToken(query.account_id, 43_200)
+        const accessToken = generateToken(query.account_id, 20)
 
         const cardIds = query.rows[0].account_cards ?? []
         const deckIds = query.rows[0].account_decks ?? []
 
-        const cardsQuery = cardIds.length
-            ? await pool.query(`SELECT * FROM game_cards WHERE card_id = any($1)`, [cardIds])
-            : { rows: [] }
-        const decksQuery = deckIds.length
-            ? await pool.query(`SELECT * FROM user_decks WHERE deck_id = any($1)`, [deckIds])
-            : { rows: [] }
+        const cardsQuery = cardIds.length ? await pool.query(`SELECT * FROM game_cards WHERE card_id = any($1)`, [cardIds]) : { rows: [] }
+        const decksQuery = deckIds.length ? await pool.query(`SELECT * FROM user_decks WHERE deck_id = any($1)`, [deckIds]) : { rows: [] }
 
+        res.cookie('refreshAccess', refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 2_592_000_000 })
+        res.cookie('access', accessToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 1_200_000 })
         res.send({
             account_id: query.rows[0].account_id,
             user_nickname: query.rows[0].nickname,
             cards: cardsQuery.rows,
-            decks: decksQuery.rows,
-            access: token,
+            decks: decksQuery.rows
         })
     }
     catch (error) {
@@ -240,10 +245,6 @@ async function initServer(): Promise<void> {
             { "$.['player1', 'player2'].socket_id": { type: 'TAG', AS: 'sockets_ids' } },
             { ON: 'JSON', PREFIX: 'match:' }
         )
-
-        cron.schedule('* * * * *', async () => {
-            await pool.query(`DELETE FROM users WHERE expire_time < NOW()`)
-        })
     }
     catch (error) {
         console.log(`an error occured: ${error.message}`)

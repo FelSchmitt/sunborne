@@ -20,7 +20,7 @@ export default function LoginPage() {
 
     const data = new FormData(event.currentTarget)
 
-    const request = await fetch('http://localhost:3001/login/validatefields', {
+    const request = await fetch('http://localhost:3001/login/validate', {
       method: 'post',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ account_id: data.get('account_id'), password: data.get('password') })

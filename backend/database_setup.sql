@@ -37,9 +37,7 @@ CREATE TABLE users (
   password_hash text NOT NULL,
   nickname varchar(20) NOT NULL,
   register_date date NOT NULL DEFAULT CURRENT_DATE,
-  status varchar(15) NOT NULL DEFAULT 'inactive', -- inactive | active | suspended | banned
-  activation_code text,
-  expire_time timestamp DEFAULT NOW() + INTERVAL '10 minutes',
+  status varchar(15) NOT NULL DEFAULT 'unvalidated', -- unvalidated | active | suspended | banned
   player_level int NOT NULL DEFAULT 0,
   xp int NOT NULL DEFAULT 0,
   coins int NOT NULL DEFAULT 0,
@@ -85,6 +83,8 @@ CREATE TABLE user_mode_stats (
   first_win_today boolean NOT NULL DEFAULT false,
   PRIMARY KEY (account_id, mode)
 );
+
+
 
 CREATE TABLE user_class_mastery (
   account_id varchar(20) NOT NULL REFERENCES users(account_id) ON DELETE CASCADE,
