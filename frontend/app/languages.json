@@ -1,26 +1,46 @@
 {
     "en-US": {
         "general_loading": "LOADING...",
-        "home_login": "LOGIN",
-        "home_or": "or",
-        "home_register": "REGISTER",
-        "login_error1": "ID not found. Check if it's written correctly",
-        "login_error2": "Wrong Password. Check it!",
+        "home_title": "Sunborne",
+        "home_options": [
+            "LOGIN",
+            "or",
+            "REGISTER"
+        ],
+        "home_logline": "Build your deck of creatures to battle against others. Plenty of different strategies and ways to win. The board is your Arena!",
+        "home_about_title": "What is It?",
+        "home_about_text": "Sunborne is a non-profit game of cards and strategy developed natively for web browsers, with zero downloads or dependencies. All you have to do is create your profile and start exploring the game.",
+        "home_features_section": [
+            "Here you will summon minions and order them to fight for you",
+            "Build your collection by wins, challenges and milestones",
+            "Play in different modes, each with its unique identity"
+        ],
+        "login_placeholders": [
+            "Account ID...",
+            "Password..."
+        ],
+        "login_send_button": "SEND",
+        "login_errors": [
+            "Account ID not found. Check if it was written correctly",
+            "Wrong Password. Check it!"
+        ],
+        "register_placeholders": [
+            "Email or account ID...",
+            "Password...",
+            "In-Game Nickname..."
+        ],
+        "register_errors": [
+            "This user ID already exists. Choose another",
+            "This user ID is too short. Must be 6 to 20 characters",
+            "This user ID is too long. Must be 6 to 20 characters",
+            "This password is too short. Must be 10 to 45 characters",
+            "This password is too long. Must be 10 to 45 characters",
+            "This player name is too short. Must be 5 to 30 characters",
+            "This player name is too long. Must be 5 to 30 characters"
+        ],
         "userspace_profile_label": "Profile",
         "userspace_decks_label": "Your Decks",
         "userspace_match_label": "Find Match",
         "userspace_matches_classic_label": "Classic Mode"
-    },
-    "pt-BR": {
-        "general_loading": "CARREGANDO...",
-        "home_login": "ENTRE",
-        "home_or": "ou",
-        "home_register": "CADASTRE-SE",
-        "login_error1": "ID não encontrado. Certifique-se de ter escrito certo",
-        "login_error2": "Senha incorreta. Verifique!",
-        "userspace_profile_label": "Perfil",
-        "userspace_decks_label": "Seus Decks",
-        "userspace_match_label": "Partida",
-        "userspace_matches_classic_label": "Modo Clássico"
     }
 }

@@ -1,15 +1,20 @@
 import type { Metadata } from "next"
 import "./globals.css"
+import { headers } from "next/headers"
 
 export const metadata: Metadata = {
   title: "Sunborne",
-  description: "A Complete RPG Strategic Board Card Game Project",
+  description: "RPG Strategic Board Card Game for Web Browsers",
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const headersList = await headers()
+  const language = headersList.get('accept-language')
+  const userLanguage = language?.split(',')[0] || 'en-US'
+
   return (
-    <html lang="en-US">
-      <body className='antialiased h-screen w-screen flex justify-center items-center overflow-hidden'>
+    <html lang={userLanguage}>
+      <body className='antialiased min-h-dvh w-dvw flex flex-col justify-center items-center overflow-x-hidden'>
         {children}
       </body>
     </html>

@@ -51,24 +51,24 @@ expressServer.use(cors(corsConfig), cookieParser(), express.json(), express.stat
 
 expressServer.post('/register/validate/fields', async (req: Request, res: Response) => {
     try {
-        const messages: { code: [number, number], message: string }[] = []
+        const messages: { field: [number, number], message: string }[] = []
 
         const idQuery = await pool.query(`SELECT account_id FROM USERS WHERE account_id = $1`, [req.body.id])
 
 
-        if (idQuery.rows.length > 0) messages.push({ code: [0, 0], message: 'account id already exists' })
+        if (idQuery.rows.length > 0) messages.push({ field: [0, 0], message: 'account id already exists' })
 
-        if (req.body.id.length < 6 || !req.body.id) messages.push({ code: [0, 1], message: 'account id too short' })
+        if (req.body.id.length < 6 || !req.body.id) messages.push({ field: [0, 1], message: 'account id too short' })
 
-        if (req.body.id?.length > 20) messages.push({ code: [0, 2], message: 'account id too long' })
+        if (req.body.id?.length > 20) messages.push({ field: [0, 2], message: 'account id too long' })
 
-        if (req.body.password.length < 10 || !req.body.password) messages.push({ code: [1, 0], message: 'password too short' })
+        if (req.body.password.length < 10 || !req.body.password) messages.push({ field: [1, 3], message: 'password too short' })
 
-        if (req.body.password?.length > 45) messages.push({ code: [1, 1], message: 'password too long' })
+        if (req.body.password?.length > 45) messages.push({ field: [1, 4], message: 'password too long' })
 
-        if (req.body.nickname.length < 5 || !req.body.nickname) messages.push({ code: [2, 1], message: 'nickname too short' })
+        if (req.body.nickname.length < 5 || !req.body.nickname) messages.push({ field: [2, 5], message: 'nickname too short' })
 
-        if (req.body.nickname?.length > 30) messages.push({ code: [2, 2], message: 'nickname too long' })
+        if (req.body.nickname?.length > 30) messages.push({ field: [2, 6], message: 'nickname too long' })
 
         if (messages.length > 0) {
             res.status(422).send({ messages: messages })
@@ -180,14 +180,14 @@ expressServer.post('/login/validate', async (req: Request, res: Response) => {
         const query = await pool.query(`SELECT * FROM users WHERE account_id = $1`, [req.body.id])
 
         if (query.rows.length === 0) {
-            res.status(404).send({ message: 'user not found' })
+            res.status(404).send({ field: 0, message: 'user not found' })
             return
         }
 
         const passwordIsCorrect: boolean = await argon2.verify(query.rows[0].password_hash, req.body.password)
 
         if (!passwordIsCorrect) {
-            res.status(401).send({ message: 'password incorrect' })
+            res.status(401).send({ field: 1, message: 'password incorrect' })
             return
         }
 
@@ -202,7 +202,7 @@ expressServer.post('/login/validate', async (req: Request, res: Response) => {
 
         res.cookie('refreshAccess', refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 2_592_000_000 })
         res.cookie('access', accessToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 1_200_000 })
-        res.send({
+        res.status(200).send({
             account_id: query.rows[0].account_id,
             user_nickname: query.rows[0].nickname,
             cards: cardsQuery.rows,

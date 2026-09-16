@@ -2,18 +2,16 @@
 
 import { useRouter } from "next/navigation"
 import { FormEvent } from "react"
+import languagesObject from '../languages.json'
 
-type accountObject = {
-  access: string,
-  account_id: string,
-  user_nickname: string,
-  cards: Object[],
-  decks: Object[]
-}
 
 
 export default function LoginPage() {
   const router = useRouter()
+  const userLanguage = navigator.language
+  const placeholders = languagesObject['en-US'].login_placeholders
+  const errorTexts = languagesObject['en-US'].login_errors
+  const sendtext = languagesObject['en-US'].login_send_button
 
   async function sendData(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -33,20 +31,14 @@ export default function LoginPage() {
     for (const field of fields) {
       field.classList.remove('invalid')
       const span = field.querySelector('span')
-      if (span) { span.remove() }
+      if (span) span.remove()
     }
 
-    const texts: string[] = [
-      'ID não encontrado. Certifique-se de ter escrito certo',
-      'Senha incorreta. Verifique!'
-    ]
-
-    if (response.messages) {
-      fields[response.messages[0].code].innerHTML += `<span class="w-67.5 md:w-80 text-[15px] text-orange-400">${texts[response.messages[0].code]}</span>`
+    if (response.field) {
+      fields[response.field].innerHTML += `<span class="w-67.5 md:w-80 text-[15px] text-orange-400">${errorTexts[response.field]}</span>`
     }
 
     else if (response.user_nickname) {
-      localStorage.setItem('access', response.access)
       localStorage.setItem('id', response.account_id)
       localStorage.setItem('nickname', response.user_nickname)
       localStorage.setItem('cards', JSON.stringify(response.cards))
@@ -56,16 +48,19 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="bg-[url(/images/home-background.png)] bg-cover w-full h-full flex justify-center items-center">
-      <form onSubmit={sendData} className="border-(--gold) border-4 rounded-[10px] bg-(--gray) flex flex-col justify-evenly items-center p-3 h-[50vh]">
-        <img src="/images/logo.png" width={100} alt="Logo" />
-        <div id="account-id" className="fielddiv flex flex-col">
-          <input type="text" name="account_id" placeholder="Email or Account ID..." className="bg-white w-67.5 md:w-80 h-7.5" />
+    <main className="bg-[url(/images/register_background_1.png)] bg-cover bg-center w-dvw h-dvh flex justify-center items-center">
+      <form onSubmit={sendData} className="bg-[url(/images/parchment_1.png)] bg-cover bg-center flex flex-col justify-evenly items-center aspect-5/6 w-[98dvw] pb-[3dvh] sm:w-[30dvw] md:w-[35dvw] lg:w-[30dvw]">
+        <img src="/images/logo.png" width={80} alt="Logo" />
+
+        <div id="account-id" className="fielddiv">
+          <input type="text" name="account_id" placeholder={placeholders[0]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" />
         </div>
-        <div id="password" className="fielddiv flex flex-col">
-          <input type="password" name="password" placeholder="Password..." className="bg-white w-67.5 md:w-80 h-7.5" />
+
+        <div id="password" className="fielddiv">
+          <input type="password" name="password" placeholder={placeholders[1]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" />
         </div>
-        <button type="submit" className="border-(--gold) border-4 rounded-[7px] bg-(--goldgray) text-white p-2 text-[15px] font-bold transition-all duration-300 hover:bg-(--darkgoldgray) cursor-pointer">ENTER</button>
+
+        <button type="submit" className="border-(--darkgoldgray) border-3 rounded-[7px] bg-(--goldgray) text-white py-1 text-[15px] w-[50dvw] font-bold transition-all duration-300 hover:bg-(--darkgoldgray) cursor-pointer sm:w-[15dvw]">{sendtext}</button>
       </form>
     </main>
   )
