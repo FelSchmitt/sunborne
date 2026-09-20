@@ -71,7 +71,7 @@ expressServer.post('/register/validate/fields', async (req: Request, res: Respon
         if (req.body.nickname?.length > 30) messages.push({ field: [2, 6], message: 'nickname too long' })
 
         if (messages.length > 0) {
-            res.status(422).send({ messages: messages })
+            res.status(422).send({ messages: messages, ok: false })
         }
         else {
             const verifyCode = String.fromCharCode(...Array.from({ length: 8 }, () => 47 + Math.round(Math.random() * 75)))
@@ -97,11 +97,12 @@ expressServer.post('/register/validate/fields', async (req: Request, res: Respon
 
             console.log(`e-mail sent: ${info.messageId}`)
 
-            res.status(201).send({ message: 'unverified register created', id: req.body.id })
+            res.cookie('validation_process_id', req.body.id, { httpOnly: true, secure: false, sameSite: 'lax' })
+            res.status(201).send({ message: 'unverified register created', ok: true })
         }
     }
     catch (error) {
-        res.status(500).send({ serverError: error })
+        res.status(500).send({ server_error: error })
         console.error(error)
     }
 })
@@ -110,28 +111,30 @@ expressServer.post('/register/validate/fields', async (req: Request, res: Respon
 
 expressServer.post('/register/validate/activation', async (req: Request, res: Response) => {
     try {
-        if (!req.body.code || !req.body.id) {
-            res.status(401).send({ message: 'missing credentials' })
+        if (!req.body.code || !req.cookies.validation_process_id) {
+            res.status(401).send({ message: 'missing credentials', ok: false })
             return
         }
 
         const account = await redisClient.json.GET(`user_validation:${req.body.id}`) as Record<string, any>
+        const code = req.cookies.validation_process_id
 
         if (!account) {
-            res.status(404).send({ message: 'register not found, expired or is already validated' })
+            res.status(404).send({ field_message: 0, message: 'register not found, expired or is already validated', ok: false })
             return
         }
 
-        const codesMatch = await argon2.verify(account.code, req.body.code)
+        const codesMatch = await argon2.verify(account.code, code)
 
         if (!codesMatch) {
             await redisClient.json.NUMINCRBY(`user_validation:${req.body.id}`, '$.attempts', 1)
 
             if (account.attempts >= 5) {
-                res.status(410).send({ message: 'max attempts count reached' })
                 await redisClient.DEL([`user_validation:${req.body.id}`])
+                res.clearCookie('validation_process_id')
+                res.status(410).send({ message: 'max attempts count reached', ok: false })
             }
-            else { res.status(401).send({ message: 'invalid code' }) }
+            else { res.status(401).send({ field_message: 1, message: 'invalid code', ok: false }) }
 
             return
         }
@@ -148,22 +151,24 @@ expressServer.post('/register/validate/activation', async (req: Request, res: Re
         )
 
         await redisClient.DEL([`user_validation:${req.body.id}`])
+        res.clearCookie('validation_process_id')
 
         const refreshToken = generateToken(account.id, 43_200)
         const accessToken = generateToken(account.id, 20)
 
-        res.cookie('refreshAccess', refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 2_592_000_000 })
+        res.cookie('refresh_access', refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 2_592_000_000 })
         res.cookie('access', accessToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 1_200_000 })
         res.send(
             {
                 message: 'account succcessfully validated',
                 account_id: account.id,
-                user_nickname: account.nickname
+                user_nickname: account.nickname,
+                ok: true
             }
         )
     }
     catch (error) {
-        res.status(500).send({ serverError: error })
+        res.status(500).send({ server_error: error })
         console.error(error)
     }
 })
@@ -173,21 +178,21 @@ expressServer.post('/register/validate/activation', async (req: Request, res: Re
 expressServer.post('/login/validate', async (req: Request, res: Response) => {
     try {
         if (!req.body.account_id || !req.body.password) {
-            res.status(401).send({ message: 'missing credentials' })
+            res.status(401).send({ message: 'missing credentials', ok: false })
             return
         }
 
         const query = await pool.query(`SELECT * FROM users WHERE account_id = $1`, [req.body.id])
 
         if (query.rows.length === 0) {
-            res.status(404).send({ field: 0, message: 'user not found' })
+            res.status(404).send({ field: 0, message: 'user not found', ok: false })
             return
         }
 
         const passwordIsCorrect: boolean = await argon2.verify(query.rows[0].password_hash, req.body.password)
 
         if (!passwordIsCorrect) {
-            res.status(401).send({ field: 1, message: 'password incorrect' })
+            res.status(401).send({ field: 1, message: 'password incorrect', ok: false })
             return
         }
 
@@ -206,11 +211,12 @@ expressServer.post('/login/validate', async (req: Request, res: Response) => {
             account_id: query.rows[0].account_id,
             user_nickname: query.rows[0].nickname,
             cards: cardsQuery.rows,
-            decks: decksQuery.rows
+            decks: decksQuery.rows,
+            ok: true
         })
     }
     catch (error) {
-        res.status(500).send({ serverError: error })
+        res.status(500).send({ server_error: error })
         console.error(error)
     }
 })
