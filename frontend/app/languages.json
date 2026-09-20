@@ -29,6 +29,7 @@
             "Password...",
             "In-Game Nickname..."
         ],
+        "register_send_button": "SEND",
         "register_errors": [
             "This user ID already exists. Choose another",
             "This user ID is too short. Must be 6 to 20 characters",
@@ -37,6 +38,13 @@
             "This password is too long. Must be 10 to 45 characters",
             "This player name is too short. Must be 5 to 30 characters",
             "This player name is too long. Must be 5 to 30 characters"
+        ],
+        "verification_code_instruction": "A verification code of 8 characters was sent to your E-mail (will expire in 15 minutes and has a maximum of 5 attempts). Enter it in the box to validate and create your new account:",
+        "verification_code_placeholder": "_ _ _ _ _ _ _ _",
+        "verification_code_send_button": "CHECK",
+        "verification_code_errors": [
+            "This code does not exist or expired",
+            "Entered code does not match"
         ],
         "userspace_profile_label": "Profile",
         "userspace_decks_label": "Your Decks",

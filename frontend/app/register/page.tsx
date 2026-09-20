@@ -1,15 +1,31 @@
 'use client'
 
-import { FormEvent } from "react"
+import { useState, FormEvent } from "react"
+import { useRouter } from "next/navigation"
 import languagesObject from '../languages.json'
+import FieldsForm from "./FieldsForm"
+import VerificationCodeForm from "./VerificationCodeForm"
+
+
+
+const userLanguage = navigator.language
+const regErrorTexts = languagesObject['en-US'].register_errors
+const codErrorTexts = languagesObject['en-US'].verification_code_errors
+
+
 
 export default function RegisterPage() {
-  const userLanguage = navigator.language
-  const placeholders = languagesObject['en-US'].register_placeholders
-  const errorTexts = languagesObject['en-US'].register_errors
-  const sendtext = languagesObject['en-US'].login_send_button
+  const router = useRouter()
+  const [currentForm, changeForm] = useState(<FieldsForm sendFunction={sendNewAccountData} />)
 
-  async function sendData(event: FormEvent<HTMLFormElement>) {
+  const forms = [
+    <FieldsForm sendFunction={sendNewAccountData} />,
+    <VerificationCodeForm sendFunction={sendValidationCode} />
+  ]
+
+
+
+  async function sendNewAccountData(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const data = new FormData(event.currentTarget)
@@ -22,7 +38,7 @@ export default function RegisterPage() {
 
     const response = await request.json()
 
-    const fields = document.querySelectorAll('.fielddiv')
+    const fields: NodeListOf<HTMLElement> = document.querySelectorAll('.fielddiv')
 
     for (const field of fields) {
       field.classList.remove('invalid')
@@ -30,49 +46,52 @@ export default function RegisterPage() {
       if (span) span.remove()
     }
 
-    const texts: string[][] = [
-      [
-        'This user ID already exists. Choose another',
-        'This user ID is too short. Must be 6 to 20 characters',
-        'This user ID is too long. Must be 6 to 20 characters'
-      ],
-      [
-        'This password is too short. Must be 10 to 45 characters',
-        'This password is too long. Must be 10 to 45 characters'
-      ],
-      [
-        'This player name is too short. Must be 5 to 30 characters',
-        'This player name is too long. Must be 5 to 30 characters'
-      ]
-    ]
-
-    if (response.messages) {
+    if (response.ok === false) {
       for (const msg of response.messages) {
-        fields[msg.code[0]].innerHTML += `<span id="account-id-span" class="w-67.5 md:w-80 text-[12px]">${errorTexts[msg.code[1]]}</span>`
+        fields[msg.code[0]].innerHTML += `<span class="w-67.5 md:w-80 text-[12px]">${regErrorTexts[msg.code[1]]}</span>`
         fields[msg.code[0]].classList.add('invalid')
       }
     }
+    else if (response.ok) changeForm(forms[1])
   }
+
+  async function sendValidationCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const data = new FormData(event.currentTarget)
+
+    const request = await fetch('http://localhost:3001/register/validate/activation', {
+      method: 'post',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ code: data.get('validation_code') })
+    })
+
+    const response = await request.json()
+
+    const field = document.getElementById('validate-div') as HTMLDivElement
+
+    field.classList.remove('invalid')
+    const span = field.querySelector('span')
+    if (span) span.remove()
+
+    if (response.ok === false && response.message == 'max attempts count reached') {
+      changeForm(forms[0])
+    }
+    else if (response.ok === false) {
+      field.classList.add('invalid')
+      field.innerHTML += `<span class="w-67.5 md:w-80 text-[12px]">${codErrorTexts[response.field_message]}</span>`
+    }
+    else if (response.ok) {
+      router.push('/hub')
+    }
+  }
+
+
 
   return (
     <main className="bg-[url(/images/register_background_1.png)] bg-cover bg-center w-dvw h-dvh flex justify-center items-center">
-      <form onSubmit={sendData} className="bg-[url(/images/parchment_1.png)] bg-cover bg-center flex flex-col justify-evenly items-center aspect-5/6 w-[98dvw] pb-[3dvh] sm:w-[30dvw] md:w-[35dvw] lg:w-[30dvw]">
-        <img src="/images/logo.png" width={80} alt="Logo" />
-
-        <div id="account-id" className="flex flex-col fielddiv">
-          <input type="text" name="account_id" placeholder={placeholders[0]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" />
-        </div>
-
-        <div id="password" className="flex flex-col fielddiv">
-          <input type="password" name="password" placeholder={placeholders[1]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" />
-        </div>
-
-        <div id="user-nickname" className="flex flex-col fielddiv">
-          <input type="text" name="user_nickname" placeholder={placeholders[2]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" />
-        </div>
-
-        <button type="submit" className="border-(--darkgoldgray) border-3 rounded-[7px] bg-(--goldgray) text-white py-1 text-[15px] w-[50dvw] font-bold transition-all duration-300 hover:bg-(--darkgoldgray) cursor-pointer sm:w-[15dvw]">{sendtext}</button>
-      </form>
+      {currentForm}
     </main>
   )
 }

@@ -34,16 +34,16 @@ export default function LoginPage() {
       if (span) span.remove()
     }
 
-    if (response.field) {
+    if (response.ok === false) {
       fields[response.field].innerHTML += `<span class="w-67.5 md:w-80 text-[15px] text-orange-400">${errorTexts[response.field]}</span>`
     }
 
-    else if (response.user_nickname) {
+    else if (response.ok) {
       localStorage.setItem('id', response.account_id)
       localStorage.setItem('nickname', response.user_nickname)
       localStorage.setItem('cards', JSON.stringify(response.cards))
       localStorage.setItem('decks', JSON.stringify(response.decks))
-      router.push('/userspace')
+      router.push('/hub')
     }
   }
 
