@@ -35,7 +35,7 @@ export default function LoginPage() {
     }
 
     if (response.ok === false) {
-      fields[response.field].innerHTML += `<span class="w-67.5 md:w-80 text-[15px] text-orange-400">${errorTexts[response.field]}</span>`
+      fields[response.field].innerHTML += `<span class="w-67.5 md:w-80 text-[15px] text-orange-600">${errorTexts[response.field]}</span>`
     }
 
     else if (response.ok) {
@@ -52,11 +52,11 @@ export default function LoginPage() {
       <form onSubmit={sendData} className="bg-[url(/images/parchment_1.png)] bg-cover bg-center flex flex-col justify-evenly items-center aspect-5/6 w-[98dvw] pb-[3dvh] sm:w-[30dvw] md:w-[35dvw] lg:w-[30dvw]">
         <img src="/images/logo.png" width={80} alt="Logo" />
 
-        <div id="account-id" className="fielddiv">
+        <div id="account-id" className="fielddiv flex flex-col">
           <input type="text" name="account_id" placeholder={placeholders[0]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" />
         </div>
 
-        <div id="password" className="fielddiv">
+        <div id="password" className="fielddiv flex flex-col">
           <input type="password" name="password" placeholder={placeholders[1]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" />
         </div>
 

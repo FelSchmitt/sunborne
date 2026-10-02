@@ -21,7 +21,7 @@ export default function VerificationCodeForm({ sendFunction }: FormProps) {
 
       <p className="text-center text-[16px] font-bold w-[65dvw] sm:w-[22dvw]">{instructionText}</p>
 
-      <div id="validate-div">
+      <div id="validate-div" className="flex flex-col">
         <input type="text" name="validation_code" id="validation-code-input" maxLength={8} onChange={removeFocus} placeholder={codePlaceholder} className="bg-white text-center w-[50dvw] h-12 sm:w-[15dvw] text-[4dvh]" required />
       </div>
 

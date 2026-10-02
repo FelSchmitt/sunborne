@@ -28,7 +28,7 @@ CREATE TABLE card_classes (
   card_id varchar(20) NOT NULL REFERENCES game_cards(card_id),
   class_id varchar(20) NOT NULL REFERENCES game_classes(class_id),
   PRIMARY KEY (card_id, class_id)
-)
+);
 
 
 
@@ -43,7 +43,8 @@ CREATE TABLE users (
   coins int NOT NULL DEFAULT 0,
   dust int NOT NULL DEFAULT 0,
   discovery_tokens int NOT NULL DEFAULT 0,
-  packs_opened int NOT NULL DEFAULT 0
+  packs_opened int NOT NULL DEFAULT 0,
+  discovery_draft boolean NOT NULL DEFAULT false
 );
 
 

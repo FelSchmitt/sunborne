@@ -9,8 +9,8 @@ import MatchMenu from "./match"
 export default function UserSpace() {
   const [menuIndex, setIndex] = useState(0)
 
-  const nickname = localStorage.getItem('nickname') as string
-  const id = localStorage.getItem('id') as string
+  const nickname = localStorage.getItem('nickname') ?? 'Unlogged User'
+  const id = localStorage.getItem('id') ?? 'unlogged_user'
   const cards: CardData[] = JSON.parse(localStorage.getItem('cards') as string)
   const decks: DeckData[] = JSON.parse(localStorage.getItem('decks') as string)
 

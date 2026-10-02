@@ -15,15 +15,15 @@ export default function FieldsForm({ sendFunction }: FormProps) {
     <form onSubmit={sendFunction} className="bg-[url(/images/parchment_1.png)] bg-cover bg-center flex flex-col justify-evenly items-center aspect-5/6 w-[98dvw] pb-[3dvh] sm:w-[30dvw] md:w-[35dvw] lg:w-[30dvw]">
       <img src="/images/logo.png" width={80} alt="Logo" />
 
-      <div className="fielddiv">
+      <div className="fielddiv flex flex-col">
         <input type="text" name="account_id" placeholder={placeholders[0]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" required />
       </div>
 
-      <div className="fielddiv">
+      <div className="fielddiv flex flex-col">
         <input type="password" name="password" placeholder={placeholders[1]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" required />
       </div>
 
-      <div className="fielddiv">
+      <div className="fielddiv flex flex-col">
         <input type="text" name="user_nickname" placeholder={placeholders[2]} className="bg-white w-[65dvw] h-7.5 sm:w-[22dvw]" required />
       </div>
 

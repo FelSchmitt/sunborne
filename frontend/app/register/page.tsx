@@ -48,8 +48,8 @@ export default function RegisterPage() {
 
     if (response.ok === false) {
       for (const msg of response.messages) {
-        fields[msg.code[0]].innerHTML += `<span class="w-67.5 md:w-80 text-[12px]">${regErrorTexts[msg.code[1]]}</span>`
-        fields[msg.code[0]].classList.add('invalid')
+        fields[msg.field[0]].innerHTML += `<span class="w-67.5 md:w-80 text-[15px] text-orange-600">${regErrorTexts[msg.field[1]]}</span>`
+        fields[msg.field[0]].classList.add('invalid')
       }
     }
     else if (response.ok) changeForm(forms[1])
@@ -80,7 +80,7 @@ export default function RegisterPage() {
     }
     else if (response.ok === false) {
       field.classList.add('invalid')
-      field.innerHTML += `<span class="w-67.5 md:w-80 text-[12px]">${codErrorTexts[response.field_message]}</span>`
+      field.innerHTML += `<span class="w-67.5 md:w-80 text-[15px] text-orange-600">${codErrorTexts[response.field_message]}</span>`
     }
     else if (response.ok) {
       router.push('/hub')
