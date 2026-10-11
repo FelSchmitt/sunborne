@@ -3,7 +3,7 @@ import { GeneratedEvent } from "./match_handlers/events_queue"
 export type playerIdentifiers = {
     id: string
     socket_id: string
-    nickname: string
+    nickname?: string
     mode?: GameMode
 }
 

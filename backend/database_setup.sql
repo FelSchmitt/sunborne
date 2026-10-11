@@ -37,7 +37,7 @@ CREATE TABLE users (
   password_hash text NOT NULL,
   nickname varchar(20) NOT NULL,
   register_date date NOT NULL DEFAULT CURRENT_DATE,
-  status varchar(15) NOT NULL DEFAULT 'unvalidated', -- unvalidated | active | suspended | banned
+  status varchar(15) NOT NULL DEFAULT 'active', -- active | suspended | banned
   player_level int NOT NULL DEFAULT 0,
   xp int NOT NULL DEFAULT 0,
   coins int NOT NULL DEFAULT 0,

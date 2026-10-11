@@ -1,9 +1,59 @@
 import { Server, Socket } from 'socket.io'
 import { RedisClientType } from 'redis'
-import { MatchObject, MoveRequest, playerIdentifiers, GameCard, EventResult } from './types'
+import { MatchObject, MoveRequest, playerIdentifiers, GameCard } from './types'
 import { testCards } from './test_cards'
 import { validateAction } from './match_handlers/game_modes_rules'
 import { createMatchEventsQueue } from './match_handlers/events_queue'
+import { executeCommand, commandRouter } from './commands_engine/commands_engine'
+import { redisClient, pool, waitingQueue } from './server'
+
+type SocketChatToEveryone = Record<string, (server: Server, message: string, senderId: string) => void>
+
+type SocketChatToSender = Record<string, (client: Socket, message: string) => void>
+
+export type SocketChat = {
+    to_everyone: SocketChatToEveryone
+    to_sender: SocketChatToSender
+}
+
+
+
+export const socketChat: SocketChat = {
+    to_everyone: {
+        user_message: (server, message, senderId) => {
+            server.emit('chat', { sender: senderId, color: '#40b0ff', text: message })
+        },
+
+        server_error: (server, message, senderId) => {
+            server.emit('chat', { sender: 'Server', color: '#ff5500', text: `Server error: ${message}` })
+        },
+
+        notification: (server, message, senderId) => {
+            server.emit('chat', { sender: 'Server', color: '#ffee00', text: message })
+        },
+    },
+
+    to_sender: {
+        invalid_action: (client, message) => {
+            client.emit('chat', { sender: 'Server', color: '#ffaa00', text: message })
+        },
+
+        notification: (client, message) => {
+            client.emit('chat', { sender: 'Server', color: '#ffee00', text: message })
+        },
+
+        command_success: (client, message) => {
+            client.emit('chat', { sender: 'Server', color: '#40e040', text: message })
+        },
+
+        command_error: (client, message) => {
+            client.emit('chat', { sender: 'Server', color: '#ff7000', text: message })
+        },
+    }
+}
+
+
+
 
 
 
@@ -11,15 +61,7 @@ async function generateCardUuid(redisConnection: RedisClientType): Promise<strin
     return `${await redisConnection.DBSIZE()}_${Date.now() + Math.round(Math.random() * 1_000_000)}_${Math.round(Math.random() * 100)}`
 }
 
-async function getMatchFromSocketId(socketId: string, redisConnection: RedisClientType): Promise<MatchObject | null> {
-    const result: any = await redisConnection.ft.search('index:matches', `@sockets_ids:{${socketId}}`)
-    if (result.total === 0) return null
-    return result.documents[0].value as MatchObject
-}
 
-async function updateMatch(match: MatchObject, redisConnection: RedisClientType): Promise<void> {
-    await redisConnection.json.set(match.match_id, '$', JSON.stringify(match))
-}
 
 function createMatch(playersIds: playerIdentifiers[], handCards: GameCard[][], matchId: string): MatchObject {
     const mode = playersIds[0].mode ?? 'classic'
@@ -76,12 +118,23 @@ function createMatch(playersIds: playerIdentifiers[], handCards: GameCard[][], m
 
 
 
+export async function getMatchFromSocketId(socketId: string, redisConnection: RedisClientType): Promise<MatchObject | null> {
+    const result: any = await redisConnection.ft.search('index:matches', `@sockets_ids:{${socketId}}`)
+    if (result.total === 0) return null
+    return result.documents[0].value as MatchObject
+}
 
 
 
-export function broadcastUserMessage(message: { sender: string, text: string }, socketServer: Server) {
-    console.log(`Message from frontend: ${message.text}`)
-    socketServer.emit('chat', { sender: message.sender, color: '#1cbe00', text: message.text })
+export function broadcastUserMessage(message: { sender: string, text: string }, socketServer: Server, client: Socket) {
+    if (message.text.startsWith('/')) {
+        executeCommand(message.text.replace('/', '/ ').split(' '), 0, commandRouter, socketServer, client, redisClient, pool, waitingQueue, socketChat)
+    }
+
+    else {
+        console.log(`Message from frontend: ${message.text}`)
+        socketChat.to_everyone.user_message(socketServer, message.text, message.sender)
+    }
 }
 
 
@@ -140,16 +193,16 @@ export async function moveRequest(request: MoveRequest, socketServer: Server, cl
         const match = await getMatchFromSocketId(client.id, redisConnection)
 
         if (!match) {
-            client.emit('chat', { sender: 'Server', color: '#ffaa00', text: 'You are not in a match' })
+            socketChat.to_sender.invalid_action(client, 'You are not in a match')
             return
         }
-
+        
         const player = match.player1.socket_id === client.id ? match.player1 : match.player2
         const opponent = match.player1.socket_id === client.id ? match.player2 : match.player1
-
+        
         const result = validateAction(match, player, opponent, request)
         if (!result.ok) {
-            client.emit('chat', { sender: 'Server', color: '#ffaa00', text: result.message })
+            socketChat.to_sender.invalid_action(client, result.message)
             return
         }
 
@@ -158,30 +211,14 @@ export async function moveRequest(request: MoveRequest, socketServer: Server, cl
         socketServer.to(match.player1.socket_id).emit('move_response', moveResults)
         socketServer.to(match.player2.socket_id).emit('move_response', moveResults)
 
-        await updateMatch(match, redisConnection)
+        await redisConnection.json.set(match.match_id, '$', JSON.stringify(match))
 
         if (match.winner_id) {
             socketServer.to(match.match_id).emit('match_over', { winner_id: match.winner_id })
         }
     }
     catch (error) {
-        client.emit('chat', { sender: 'Server', color: '#ff5500', text: `Server error: ${error}` })
+        socketChat.to_everyone.server_error(socketServer, error, '')
         console.error(error)
-    }
-}
-
-
-
-export function clearWaitingQueue(waitingQueue: playerIdentifiers[], socketServer: Server) {
-    waitingQueue.splice(0)
-    socketServer.emit('chat', { sender: 'Server', color: '#ffee00', text: 'Players waiting queue cleared' })
-}
-
-
-
-export async function getMatch(client: Socket, redisConnection: RedisClientType) {
-    const match = await getMatchFromSocketId(client.id, redisConnection)
-    if (match) {
-        client.emit('match_data', match)
     }
 }

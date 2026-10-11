@@ -11,10 +11,9 @@ const nodemailer = require('nodemailer')
 import cron from 'node-cron'
 dotenv.config()
 
-import { generateToken, validateToken } from './middlewares'
+import { generateToken, serverMailMessage } from './middlewares'
 import { playerIdentifiers } from './types'
 import * as channels from './socket_channels'
-import { serverMailMessage } from './middlewares'
 
 const corsConfig = { origin: 'http://localhost:3000', credentials: true }
 
@@ -41,7 +40,7 @@ const emailTransporter = nodemailer.createTransport({
 const expressServer = express()
 const server = http.createServer(expressServer)
 const socketServer = new Server(server, { cors: corsConfig })
-const redisClient: RedisClientType = createClient()
+export const redisClient: RedisClientType = createClient()
 
 
 
@@ -196,8 +195,8 @@ expressServer.post('/login/validate', async (req: Request, res: Response) => {
             return
         }
 
-        const refreshToken = generateToken(query.account_id, 43_200)
-        const accessToken = generateToken(query.account_id, 20)
+        const refreshToken = generateToken(query.rows[0].account_id, 43_200)
+        const accessToken = generateToken(query.rows[0].account_id, 20)
 
         const cardIds = query.rows[0].account_cards ?? []
         const deckIds = query.rows[0].account_decks ?? []
@@ -223,7 +222,7 @@ expressServer.post('/login/validate', async (req: Request, res: Response) => {
 
 
 
-const waitingQueue: playerIdentifiers[] = []
+export const waitingQueue: playerIdentifiers[] = []
 
 socketServer.on('connection', (client: Socket) => {
     console.log(`client ${client.id} connected`)
@@ -232,11 +231,9 @@ socketServer.on('connection', (client: Socket) => {
         console.log(`client ${client.id} disconnected`)
     })
 
-    client.on('chat', (message) => { channels.broadcastUserMessage(message, socketServer) })
+    client.on('chat', (message) => { channels.broadcastUserMessage(message, socketServer, client) })
     client.on('find_opponent', (ids) => { channels.joinWaitingQueue({ id: ids.id, socket_id: client.id, nickname: ids.nickname }, waitingQueue, redisClient, socketServer) })
     client.on('move_request', (request) => { channels.moveRequest(request, socketServer, client, redisClient) })
-    client.on('clear_waiting_queue', () => { channels.clearWaitingQueue(waitingQueue, socketServer) })
-    client.on('get_match', () => { channels.getMatch(client, redisClient) })
 })
 
 
@@ -253,7 +250,7 @@ async function initServer(): Promise<void> {
         )
     }
     catch (error) {
-        console.log(`an error occured: ${error.message}`)
+        console.log(`error on redis: ${error.message}`)
     }
 
     server.listen(3001, () => console.log('backend server running on http://localhost:3001'))

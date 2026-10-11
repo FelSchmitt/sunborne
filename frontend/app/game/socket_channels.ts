@@ -59,8 +59,8 @@ export function receiveChatMessage(message: chatMessage) {
 
 
 
-export function receiveMatchDataToDisplayInConsole(message: any) {
-    console.log(message)
+export function displayDataInConsole(data: any) {
+    console.log(data)
 }
 
 
