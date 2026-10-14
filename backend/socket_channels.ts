@@ -2,8 +2,8 @@ import { Server, Socket } from 'socket.io'
 import { RedisClientType } from 'redis'
 import { MatchObject, MoveRequest, playerIdentifiers, GameCard } from './types'
 import { testCards } from './test_cards'
-import { validateAction } from './match_handlers/game_modes_rules'
-import { createMatchEventsQueue } from './match_handlers/events_queue'
+import { validateAction } from './match_engine/game_modes_rules'
+import { createMatchEventsQueue } from './match_engine/events_queue'
 import { executeCommand, commandRouter } from './commands_engine/commands_engine'
 import { redisClient, pool, waitingQueue } from './server'
 
@@ -128,7 +128,7 @@ export async function getMatchFromSocketId(socketId: string, redisConnection: Re
 
 export function broadcastUserMessage(message: { sender: string, text: string }, socketServer: Server, client: Socket) {
     if (message.text.startsWith('/')) {
-        executeCommand(message.text.replace('/', '/ ').split(' '), 0, commandRouter, socketServer, client, redisClient, pool, waitingQueue, socketChat)
+        executeCommand(message.text.split(' '), 0, commandRouter, socketServer, client, redisClient, pool, waitingQueue, socketChat)
     }
 
     else {
@@ -193,23 +193,32 @@ export async function moveRequest(request: MoveRequest, socketServer: Server, cl
         const match = await getMatchFromSocketId(client.id, redisConnection)
 
         if (!match) {
-            socketChat.to_sender.invalid_action(client, 'You are not in a match')
-            return
+            return socketChat.to_sender.invalid_action(client, 'You are not in a match')
         }
-        
-        const player = match.player1.socket_id === client.id ? match.player1 : match.player2
-        const opponent = match.player1.socket_id === client.id ? match.player2 : match.player1
-        
+
+        const requestIsFromPlayer1 = match.player1.socket_id === client.id
+
+        const player = requestIsFromPlayer1 ? match.player1 : match.player2
+        const opponent = requestIsFromPlayer1 ? match.player2 : match.player1
+
         const result = validateAction(match, player, opponent, request)
         if (!result.ok) {
-            socketChat.to_sender.invalid_action(client, result.message)
-            return
+            return socketChat.to_sender.invalid_action(client, result.message)
         }
 
         const moveResults = createMatchEventsQueue(match, player, opponent, request)
 
-        socketServer.to(match.player1.socket_id).emit('move_response', moveResults)
-        socketServer.to(match.player2.socket_id).emit('move_response', moveResults)
+        for (const result of moveResults) {
+            if (result.source) result.source_uuid = result.source.uuid
+
+            if (result.target) result.target_uuid = result.target.uuid
+
+            delete result.function
+            delete result.source
+            delete result.target
+        }
+
+        socketServer.to([match.player1.socket_id, match.player2.socket_id]).emit('move_response', moveResults)
 
         await redisConnection.json.set(match.match_id, '$', JSON.stringify(match))
 

@@ -4,7 +4,7 @@ import { MINOR_RITUAL_ENERGY_THRESHOLD, ACTION_DIE_MINIMUM_ATTACK, ACTION_DIE_MI
 type ValidationResult = { ok: boolean, message: string }
 type Validator = (match: MatchObject, requestingPlayer: MatchPlayer, opponent: MatchPlayer, request: MoveRequest) => ValidationResult
 
-const pass: ValidationResult = { ok: true, message: null }
+const pass: ValidationResult = { ok: true, message: '' }
 const fail = (message: string): ValidationResult => ({ ok: false, message: message })
 
 

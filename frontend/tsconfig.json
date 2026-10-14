@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "app/game/commands_engine"  ],
   "exclude": ["node_modules"]
 }

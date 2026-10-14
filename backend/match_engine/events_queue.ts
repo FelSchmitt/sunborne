@@ -9,6 +9,8 @@ export type GeneratedEvent = {
     opponent?: MatchPlayer
     source?: GameCard
     target?: GameCard
+    source_uuid?: string
+    target_uuid?: string
     eventData?: Record<string, any>
 }
 
