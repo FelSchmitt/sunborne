@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import * as three from 'three'
 import { OrbitControls, GLTFLoader } from 'three/examples/jsm/Addons.js'
 import * as channels from './socket_channels'
-import * as sceneFunctions from './scene_utils'
+import * as sceneUtils from './scene_utils'
 import { keyboardCommandsHandler } from './keyboard_commands'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
@@ -30,6 +30,8 @@ export default function GameScreen() {
         const raycaster = new three.Raycaster()
         const loader = new GLTFLoader()
         const textureLoader = new three.TextureLoader()
+        const timer = new three.Timer()
+        let animationPlayer: three.AnimationMixer
         const light = new three.DirectionalLight('#ffffff', 10)
         const composer = new EffectComposer(renderer)
         const renderPass = new RenderPass(scene, camera)
@@ -45,24 +47,12 @@ export default function GameScreen() {
         composer.addPass(renderPass)
         composer.addPass(outline)
 
-        let loop: boolean = true
         const mousePosition: three.Vector2 = new three.Vector2()
         let selectedObject: three.Object3D | null = null
         const inputs: NodeListOf<HTMLInputElement> = document.querySelectorAll('.vectorinput')
+        scene.userData.loop = true
 
-        loader.load(
-            'models/table.glb',
-            function (gltf) {
-                gltf.scene.name = 'table'
-                scene.add(gltf.scene)
-                console.log('table model loaded')
-            },
-            function (progress) { },
-            function (error) {
-                console.error(error)
-                alert(`table model failed: ${error}`)
-            }
-        )
+        sceneUtils.addSceneObject(loader, scene, 'table', 'table')
 
         camera.position.setX(-12)
         camera.position.setY(28)
@@ -78,7 +68,7 @@ export default function GameScreen() {
 
 
         function renderLoop() {
-            if (loop) {
+            if (scene.userData.loop) {
                 cameraControl.update()
                 composer.render()
 
@@ -87,11 +77,11 @@ export default function GameScreen() {
         }
 
         function detectVectorInputChange(this: HTMLInputElement) {
-            selectedObject && sceneFunctions.updateObjectVectorValue(selectedObject, this)
+            selectedObject && sceneUtils.updateObjectVectorValue(selectedObject, this)
         }
 
         window.addEventListener('keydown', keyboardCommandsHandler)
-        document.getElementById('get-object-vectors')?.addEventListener('click', () => { selectedObject && sceneFunctions.getObjectVectorsValues(selectedObject, inputs) })
+        document.getElementById('get-object-vectors')?.addEventListener('click', () => { selectedObject && sceneUtils.getObjectVectorsValues(selectedObject, inputs) })
         for (const input of inputs) { input.addEventListener('change', detectVectorInputChange) }
 
         document.getElementById('chat-button')?.addEventListener('click', () => {
@@ -103,12 +93,14 @@ export default function GameScreen() {
                     channels.socketConnection.emit('chat', { sender: localStorage.getItem('id') ?? 'unlogged_user', text: text.replace('/server', '/ ') })
                 }
                 else {
-                    executeCommand(text.replace('/', '/ ').split(' '), 0, commandRouter, scene, loader, textureLoader, channels.socketConnection)
+                    executeCommand(text.replace('/', '/ ').split(' '), 0, commandRouter, scene, loader, textureLoader, channels.socketConnection, renderLoop)
                 }
             }
             else {
                 channels.socketConnection.emit('chat', { sender: localStorage.getItem('id') ?? 'unlogged_user', text: text })
             }
+
+            input.value = ''
         })
 
         renderLoop()

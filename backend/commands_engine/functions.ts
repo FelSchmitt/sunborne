@@ -31,3 +31,9 @@ export const getMatch: CommandPathFunction = async (server, client, waitingQueue
     if (match) { client.emit('console_data', match) }
     else { socketChat.to_sender.command_error(client, 'Match not found or you are not in one') }
 }
+
+
+
+export const getSocketId: CommandPathFunction = async (server, client, waitingQueue, redisConnection, postgreConnection, keywords) => {
+    socketChat.to_sender.command_success(client, client.id)
+}

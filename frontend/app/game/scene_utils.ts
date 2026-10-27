@@ -19,15 +19,13 @@ export function resetScene(scene: Scene, loader: GLTFLoader, light: Light) {
 
     loader.load(
         'models/game_table.glb',
-        function (gltf) {
+        (gltf) => {
             gltf.scene.name = 'table'
             scene.add(gltf.scene)
             console.log('table model loaded')
         },
-        function (progress) {
-            console.log(`${progress.loaded} of ${progress.total} loaded`)
-        },
-        function (error) {
+        (progress) => { },
+        (error) => {
             console.error(error)
             alert(`table model failed: ${error}`)
         }
@@ -35,13 +33,13 @@ export function resetScene(scene: Scene, loader: GLTFLoader, light: Light) {
 
     loader.load(
         'models/carpet.glb',
-        function (gltf) {
+        (gltf) => {
             gltf.scene.name = 'carpet'
             scene.add(gltf.scene)
             console.log('carpet model loaded')
         },
-        function (progress) { },
-        function (error) {
+        (progress) => { },
+        (error) => {
             console.error(error)
             alert(`carpet model failed: ${error}`)
         }
@@ -87,12 +85,20 @@ export function getObjectVectorsValues(object: Object3D, inputs: NodeListOf<HTML
 
 
 
-export function addSceneObject(loader: GLTFLoader, scene: Scene, filename: string, transform: PositionRotationScale, clickBox?: PositionRotationScale, hoverBox?: PositionRotationScale, objectName?: string) {
+export function addSceneObject(loader: GLTFLoader, scene: Scene, filename: string, objectName?: string, transform?: PositionRotationScale, clickBox?: PositionRotationScale, hoverBox?: PositionRotationScale) {
     loader.load(
         `models/${filename}.glb`,
 
         (gltf) => {
             gltf.scene.name = objectName ?? 'object'
+
+            if (transform) {
+                for (let index = 1; index < 10; ++index) {
+                    const propertyIndex = Math.ceil(index / 3) - 1
+
+                    gltf.scene[vectorProperties[propertyIndex]][dimensions[(index - 1) - 3 * propertyIndex]] = transform[index - 1]
+                }
+            }
 
             if (clickBox) {
                 const geometry = new BoxGeometry(clickBox[6], clickBox[7], clickBox[8])
@@ -106,12 +112,6 @@ export function addSceneObject(loader: GLTFLoader, scene: Scene, filename: strin
 
                 box.layers.enable(1)
                 box.layers.disable(0)
-
-                for (let index = 1; index < 10; ++index) {
-                    const propertyIndex = Math.ceil(index / 3) - 1
-
-                    gltf.scene[vectorProperties[propertyIndex]][dimensions[(index - 1) - 3 * propertyIndex]] = transform[index - 1]
-                }
 
                 gltf.scene.add(box)
             }
@@ -129,14 +129,10 @@ export function addSceneObject(loader: GLTFLoader, scene: Scene, filename: strin
                 box.layers.enable(2)
                 box.layers.disable(0)
 
-                for (let index = 1; index < 10; ++index) {
-                    const propertyIndex = Math.ceil(index / 3) - 1
-
-                    gltf.scene[vectorProperties[propertyIndex]][dimensions[(index - 1) - 3 * propertyIndex]] = transform[index - 1]
-                }
-
                 gltf.scene.add(box)
             }
+
+            gltf.scene.animations = gltf.animations
 
             scene.add(gltf.scene)
         },

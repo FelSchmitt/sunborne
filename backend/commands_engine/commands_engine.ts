@@ -43,6 +43,15 @@ export const commandRouter: CommandPathObject = {
                     function: functions.getMatch
                 }
             ]
+        },
+        {
+            keyword: 'socket',
+            paths: [
+                {
+                    keyword: 'getid',
+                    function: functions.getSocketId
+                }
+            ]
         }
     ]
 }
