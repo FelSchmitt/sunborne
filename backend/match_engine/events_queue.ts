@@ -11,7 +11,7 @@ export type GeneratedEvent = {
     target?: GameCard
     source_uuid?: string
     target_uuid?: string
-    eventData?: Record<string, any>
+    event_data?: Record<string, any>
 }
 
 type EventEmitter = (match: MatchObject, actingPlayer: MatchPlayer, opponent: MatchPlayer, request: MoveRequest, descriptorOnly?: boolean, event?: GeneratedEvent) => GeneratedEvent[]
@@ -586,17 +586,17 @@ const checkForWinnerByDefeatedMinions: EventEmitter = (match, actingPlayer, oppo
 
     if (playerMainCards.length === 0 && opponentMainCards.length === 0) {
         if (!descriptorOnly) { match.both_players_lost = true }
-        return [{ eventResult: 'won_match', function: checkForWinnerByDefeatedMinions }]
+        return [{ eventResult: 'match_ended', function: checkForWinnerByDefeatedMinions }]
     }
 
     else if (playerMainCards.length === 0) {
         if (!descriptorOnly) { match.winner_id = opponent.id }
-        return [{ eventResult: 'won_match', player: opponent, function: checkForWinnerByDefeatedMinions }]
+        return [{ eventResult: 'match_ended', player: opponent, function: checkForWinnerByDefeatedMinions }]
     }
 
     else if (opponentMainCards.length === 0) {
         if (!descriptorOnly) { match.winner_id = actingPlayer.id }
-        return [{ eventResult: 'won_match', player: actingPlayer, function: checkForWinnerByDefeatedMinions }]
+        return [{ eventResult: 'match_ended', player: actingPlayer, function: checkForWinnerByDefeatedMinions }]
     }
 
     return []
@@ -610,17 +610,17 @@ const checkForWinnerByDepletedLifePool: EventEmitter = (match, actingPlayer, opp
 
     if (playerLifePool <= 0 && opponentLifePool <= 0) {
         if (!descriptorOnly) match.both_players_lost = true
-        return [{ eventResult: 'won_match', function: checkForWinnerByDepletedLifePool }]
+        return [{ eventResult: 'match_ended', function: checkForWinnerByDepletedLifePool }]
     }
 
     else if (playerLifePool <= 0) {
         if (!descriptorOnly) match.winner_id = opponent.id
-        return [{ eventResult: 'won_match', player: opponent, function: checkForWinnerByDepletedLifePool }]
+        return [{ eventResult: 'match_ended', player: opponent, function: checkForWinnerByDepletedLifePool }]
     }
 
     else if (opponentLifePool <= 0) {
         if (!descriptorOnly) match.winner_id = actingPlayer.id
-        return [{ eventResult: 'won_match', player: actingPlayer, function: checkForWinnerByDepletedLifePool }]
+        return [{ eventResult: 'match_ended', player: actingPlayer, function: checkForWinnerByDepletedLifePool }]
     }
 
     return []
@@ -634,12 +634,12 @@ const checkForWinnerByJudgeVerdict: EventEmitter = (match, actingPlayer, opponen
 
     if (playerStreaks >= 3) {
         if (!descriptorOnly) { match.winner_id = actingPlayer.id }
-        return [{ eventResult: 'won_match', player: actingPlayer, function: checkForWinnerByJudgeVerdict }]
+        return [{ eventResult: 'match_ended', player: actingPlayer, function: checkForWinnerByJudgeVerdict }]
     }
 
     else if (opponentStreaks >= 3) {
         if (!descriptorOnly) { match.winner_id = opponent.id }
-        return [{ eventResult: 'won_match', player: opponent, function: checkForWinnerByJudgeVerdict }]
+        return [{ eventResult: 'match_ended', player: opponent, function: checkForWinnerByJudgeVerdict }]
     }
 
     return []

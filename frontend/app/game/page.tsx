@@ -11,6 +11,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js'
 import { GeneratedEvent } from '../types'
 import { executeCommand, commandRouter } from './commands_engine/engine'
+import { ParticleEmitter } from './actions/particles'
+import { fire } from './actions/test_particles'
 
 import { ObjectVectorsMenu } from './menu_tools/ObjectVectorsMenu'
 
@@ -23,21 +25,23 @@ export default function GameScreen() {
         renderer.setPixelRatio(window.devicePixelRatio)
         renderer.setSize(window.innerWidth, window.innerHeight)
 
-
         const scene = new three.Scene()
         const camera = new three.PerspectiveCamera(75, gameScreen.width / gameScreen.height, 1, 300)
         const cameraControl = new OrbitControls(camera, renderer.domElement)
-        const raycaster = new three.Raycaster()
-        const loader = new GLTFLoader()
-        const textureLoader = new three.TextureLoader()
-        const timer = new three.Timer()
-        let animationPlayer: three.AnimationMixer
-        const light = new three.DirectionalLight('#ffffff', 10)
         const composer = new EffectComposer(renderer)
         const renderPass = new RenderPass(scene, camera)
         const outline = new OutlinePass(new three.Vector2(window.innerWidth, window.innerHeight), scene, camera)
+        const loader = new GLTFLoader()
+        const textureLoader = new three.TextureLoader()
+        const raycaster = new three.Raycaster()
+        const timer = new three.Timer()
+
+        const light = new three.DirectionalLight('#ffffff', 10)
+        const ambientLight = new three.AmbientLight('#ffe84c', 3)
+        const activeEmitters: ParticleEmitter[] = []
 
         light.position.x = 1
+        light.position.y = 1
         light.position.z = 1
         outline.edgeStrength = 5.0
         outline.edgeGlow = 0.6
@@ -53,34 +57,40 @@ export default function GameScreen() {
         scene.userData.loop = true
 
         sceneUtils.addSceneObject(loader, scene, 'table', 'table')
+        activeEmitters.push(new ParticleEmitter(fire, scene))
 
         camera.position.setX(-12)
         camera.position.setY(28)
         scene.add(light)
+        scene.add(ambientLight)
         composer.render()
-
-
-
-        channels.socketConnection.on('chat', channels.receiveChatMessage)
-        channels.socketConnection.on('move_response', (resultQueue: GeneratedEvent[]) => { channels.moveResponse(resultQueue, scene, loader, textureLoader) })
-        channels.socketConnection.on('console_data', channels.logDataInConsole)
 
 
 
         function renderLoop() {
             if (scene.userData.loop) {
                 cameraControl.update()
+
+                for (const emitter of activeEmitters) {
+                    emitter.updateLifetime()
+
+                    if (emitter.expired) { activeEmitters.splice(activeEmitters.indexOf(emitter), 1) }
+                    else { emitter.updateParticles() }
+                }
+
                 composer.render()
 
                 requestAnimationFrame(renderLoop)
             }
         }
 
+
+
         function detectVectorInputChange(this: HTMLInputElement) {
             selectedObject && sceneUtils.updateObjectVectorValue(selectedObject, this)
         }
 
-        window.addEventListener('keydown', keyboardCommandsHandler)
+        // window.addEventListener('keydown', keyboardCommandsHandler)
         document.getElementById('get-object-vectors')?.addEventListener('click', () => { selectedObject && sceneUtils.getObjectVectorsValues(selectedObject, inputs) })
         for (const input of inputs) { input.addEventListener('change', detectVectorInputChange) }
 
@@ -89,11 +99,13 @@ export default function GameScreen() {
             const text = input.value
 
             if (text.startsWith('/')) {
+                const keywords = text.replace('/', '').split(' ')
+
                 if (text.startsWith('/server')) {
                     channels.socketConnection.emit('chat', { sender: localStorage.getItem('id') ?? 'unlogged_user', text: text.replace('/server', '/ ') })
                 }
                 else {
-                    executeCommand(text.replace('/', '/ ').split(' '), 0, commandRouter, scene, loader, textureLoader, channels.socketConnection, renderLoop)
+                    executeCommand(keywords, 0, commandRouter, scene, loader, textureLoader, channels.socketConnection, renderLoop)
                 }
             }
             else {
@@ -104,6 +116,12 @@ export default function GameScreen() {
         })
 
         renderLoop()
+
+
+
+        channels.socketConnection.on('chat', channels.receiveChatMessage)
+        channels.socketConnection.on('move_response', (resultQueue: GeneratedEvent[]) => { channels.moveResponse(resultQueue, scene, loader, textureLoader) })
+        channels.socketConnection.on('console_data', channels.logDataInConsole)
     }, [])
 
 
@@ -112,14 +130,14 @@ export default function GameScreen() {
         <>
             <canvas id='gamescreen'></canvas>
 
-            <div id='chat-container' className='absolute w-[20vw] h-[50vh] border-4 border-zinc-500 flex flex-col justify-evenly items-center'>
+            <div id='chat-container' className='closed absolute w-[20vw] h-[50vh] border-4 border-zinc-500 flex flex-col justify-evenly items-center'>
                 <div id='test-chat' className='w-[90%] h-[80%] bg-[#888] flex flex-col overflow-y-scroll'></div>
 
                 <input type='text' id='message-input' className='bg-white border-[3px] border-[#4784ff] w-[90%]' />
                 <button id='chat-button' className='bg-[#9d47ff60] border-[3px] border-[#9d47ff] rounded-[5px] w-[90%] p-0.75 text-white font-bold'>SEND</button>
             </div>
 
-            <ObjectVectorsMenu />
+            {/* <ObjectVectorsMenu /> */}
         </>
     )
 }

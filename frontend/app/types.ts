@@ -1,7 +1,49 @@
+import { BufferGeometry, ColorRepresentation, Blending } from "three"
+
+
 export type PlayerIdentifiers = {
     id: string
     socket_id: string
     nickname: string
+}
+
+
+
+export type EmitterForce = {
+    position: [number, number, number]
+    dimensions: [number, number, number]
+    radius: number
+    shape: 'sphere' | 'box'
+    type: 'point' | 'parallel' | 'resistive'
+    strength: number
+    point_direction: [number, number]
+    point_position: [number, number, number]
+    relative: boolean
+}
+
+
+
+export type ParticleConfig = {
+    emitter: {
+        position: [number, number, number]
+        dimensions: [number, number, number]
+        radius: number
+        shape: 'sphere' | 'box'
+        surface_only: boolean
+        max_lifetime: number
+        rate: number
+    },
+
+    particles: {
+        initial_speed: [number, number, number]
+        max_lifetime: number
+        size: number
+        color: ColorRepresentation
+        opacity: number
+        blend: Blending
+    }
+
+    forces: EmitterForce[]
 }
 
 
@@ -126,5 +168,5 @@ export type GeneratedEvent = {
     opponent?: MatchPlayer
     source_uuid?: string
     target_uuid?: string
-    eventData?: Record<string, any>
+    event_data?: Record<string, any>
 }

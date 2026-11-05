@@ -1,4 +1,4 @@
-import { Scene, Light, Object3D, Raycaster, BoxGeometry, Mesh, Vector3 } from 'three'
+import { Scene, Light, Object3D, Raycaster, BoxGeometry, Mesh, AnimationMixer } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/Addons.js'
 import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js'
 
@@ -137,7 +137,7 @@ export function addSceneObject(loader: GLTFLoader, scene: Scene, filename: strin
             scene.add(gltf.scene)
         },
 
-        (progress) => { },
+        undefined,
 
         (error) => {
             console.error(error)

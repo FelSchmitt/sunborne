@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const headersList = await headers()
   const language = headersList.get('accept-language')
-  const userLanguage = language?.split(',')[0] || 'en-US'
+  const userLanguage = language?.split(',')[0] ?? 'en-US'
 
   return (
     <html lang={userLanguage}>
