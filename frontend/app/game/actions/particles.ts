@@ -176,7 +176,7 @@ export class ParticleEmitter {
 
                         particleCoords[index] = this.position[0] + (this.dimensions[0] - (Math.random() * this.dimensions[0] * 2 * Math.ceil(surfaceY + surfaceZ)))
                         particleCoords[index + 1] = this.position[1] + (this.dimensions[1] - (Math.random() * this.dimensions[1] * 2 * Math.ceil(surfaceX + surfaceZ)))
-                        particleCoords[index + 2] = this.position[2] + this.dimensions[2] - (Math.random() * this.dimensions[2] * 2 * Math.ceil(surfaceX + surfaceY))
+                        particleCoords[index + 2] = this.position[2] + (this.dimensions[2] - (Math.random() * this.dimensions[2] * 2 * Math.ceil(surfaceX + surfaceY)))
                     }
 
                     else {

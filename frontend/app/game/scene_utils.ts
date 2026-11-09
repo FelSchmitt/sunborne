@@ -14,42 +14,6 @@ const dimensions: ('x' | 'y' | 'z')[] = ['x', 'y', 'z']
 
 
 
-export function resetScene(scene: Scene, loader: GLTFLoader, light: Light) {
-    scene.children.splice(0)
-
-    loader.load(
-        'models/game_table.glb',
-        (gltf) => {
-            gltf.scene.name = 'table'
-            scene.add(gltf.scene)
-            console.log('table model loaded')
-        },
-        (progress) => { },
-        (error) => {
-            console.error(error)
-            alert(`table model failed: ${error}`)
-        }
-    )
-
-    loader.load(
-        'models/carpet.glb',
-        (gltf) => {
-            gltf.scene.name = 'carpet'
-            scene.add(gltf.scene)
-            console.log('carpet model loaded')
-        },
-        (progress) => { },
-        (error) => {
-            console.error(error)
-            alert(`carpet model failed: ${error}`)
-        }
-    )
-
-    scene.add(light)
-}
-
-
-
 export function updateObjectVectorValue(object: any, input: HTMLInputElement) {
     object[input.dataset.vector as string][input.dataset.value as string] = input.valueAsNumber
 }

@@ -12,7 +12,7 @@ import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js'
 import { GeneratedEvent } from '../types'
 import { executeCommand, commandRouter } from './commands_engine/engine'
 import { ParticleEmitter } from './actions/particles'
-import { fire } from './actions/test_particles'
+import { AnimationPlayer } from './actions/animations'
 
 import { ObjectVectorsMenu } from './menu_tools/ObjectVectorsMenu'
 
@@ -36,9 +36,10 @@ export default function GameScreen() {
         const raycaster = new three.Raycaster()
         const timer = new three.Timer()
 
-        const light = new three.DirectionalLight('#ffffff', 10)
+        const light = new three.DirectionalLight('#ffffff', 8)
         const ambientLight = new three.AmbientLight('#ffe84c', 3)
         const activeEmitters: ParticleEmitter[] = []
+        const activeAnimations: AnimationPlayer[] = []
 
         light.position.x = 1
         light.position.y = 1
@@ -57,7 +58,18 @@ export default function GameScreen() {
         scene.userData.loop = true
 
         sceneUtils.addSceneObject(loader, scene, 'table', 'table')
-        activeEmitters.push(new ParticleEmitter(fire, scene))
+
+        loader.load(
+            'models/card_1.glb',
+            (gltf) => {
+                gltf.scene.position.x = -15
+                gltf.scene.position.y = 11.6
+                gltf.scene.position.z = 18.6
+                gltf.scene.rotation.y = 1.57
+                activeAnimations.push(new AnimationPlayer(gltf.animations[0], gltf.scene, 1, 'forward', 3))
+                scene.add(gltf.scene)
+            }
+        )
 
         camera.position.setX(-12)
         camera.position.setY(28)
@@ -76,6 +88,11 @@ export default function GameScreen() {
 
                     if (emitter.expired) { activeEmitters.splice(activeEmitters.indexOf(emitter), 1) }
                     else { emitter.updateParticles() }
+                }
+
+                for (const anim of activeAnimations) {
+                    anim.running = true
+                    anim.update()
                 }
 
                 composer.render()
@@ -115,13 +132,13 @@ export default function GameScreen() {
             input.value = ''
         })
 
-        renderLoop()
-
 
 
         channels.socketConnection.on('chat', channels.receiveChatMessage)
         channels.socketConnection.on('move_response', (resultQueue: GeneratedEvent[]) => { channels.moveResponse(resultQueue, scene, loader, textureLoader) })
         channels.socketConnection.on('console_data', channels.logDataInConsole)
+
+        renderLoop()
     }, [])
 
 
