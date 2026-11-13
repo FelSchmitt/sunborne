@@ -1,6 +1,6 @@
-import { Scene, Light, Object3D, Raycaster, BoxGeometry, Mesh, AnimationMixer } from 'three'
+import { Scene, Object3D, BoxGeometry, Mesh } from 'three'
 import { GLTFLoader } from 'three/examples/jsm/Addons.js'
-import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js'
+import { AnimationPlayer } from './actions/animations'
 
 type PositionRotationScale = [number, number, number, number, number, number, number, number, number] // [position x, y, z; rotation x, y, z; scale x, y, z]
 
@@ -49,9 +49,9 @@ export function getObjectVectorsValues(object: Object3D, inputs: NodeListOf<HTML
 
 
 
-export function addSceneObject(loader: GLTFLoader, scene: Scene, filename: string, objectName?: string, transform?: PositionRotationScale, clickBox?: PositionRotationScale, hoverBox?: PositionRotationScale) {
+export function addSceneObject(loader: GLTFLoader, scene: Scene, filepath: string, animations: AnimationPlayer[], objectName?: string, transform?: PositionRotationScale, clickBox?: PositionRotationScale, hoverBox?: PositionRotationScale) {
     loader.load(
-        `models/${filename}.glb`,
+        `models/${filepath}.glb`,
 
         (gltf) => {
             gltf.scene.name = objectName ?? 'object'
@@ -98,6 +98,10 @@ export function addSceneObject(loader: GLTFLoader, scene: Scene, filename: strin
 
             gltf.scene.animations = gltf.animations
 
+            for (const anim of gltf.animations) {
+                animations.push(new AnimationPlayer(anim, gltf.scene, 3))
+            }
+
             scene.add(gltf.scene)
         },
 
@@ -105,7 +109,7 @@ export function addSceneObject(loader: GLTFLoader, scene: Scene, filename: strin
 
         (error) => {
             console.error(error)
-            alert(`${filename} model failed: ${error}`)
+            alert(`${filepath} model failed: ${error}`)
         }
     )
 }

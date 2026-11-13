@@ -33,8 +33,10 @@ export default function GameScreen() {
         const outline = new OutlinePass(new three.Vector2(window.innerWidth, window.innerHeight), scene, camera)
         const loader = new GLTFLoader()
         const textureLoader = new three.TextureLoader()
+        const audioLoader = new three.AudioLoader()
         const raycaster = new three.Raycaster()
         const timer = new three.Timer()
+        const listener = new three.AudioListener()
 
         const light = new three.DirectionalLight('#ffffff', 8)
         const ambientLight = new three.AmbientLight('#ffe84c', 3)
@@ -51,25 +53,15 @@ export default function GameScreen() {
         outline.hiddenEdgeColor.set('#15556e')
         composer.addPass(renderPass)
         composer.addPass(outline)
+        camera.add(listener)
 
         const mousePosition: three.Vector2 = new three.Vector2()
         let selectedObject: three.Object3D | null = null
         const inputs: NodeListOf<HTMLInputElement> = document.querySelectorAll('.vectorinput')
         scene.userData.loop = true
 
-        sceneUtils.addSceneObject(loader, scene, 'table', 'table')
-
-        loader.load(
-            'models/card_1.glb',
-            (gltf) => {
-                gltf.scene.position.x = -15
-                gltf.scene.position.y = 11.6
-                gltf.scene.position.z = 18.6
-                gltf.scene.rotation.y = 1.57
-                activeAnimations.push(new AnimationPlayer(gltf.animations[0], gltf.scene, 1, 'forward', 3))
-                scene.add(gltf.scene)
-            }
-        )
+        sceneUtils.addSceneObject(loader, scene, 'table', activeAnimations, 'table')
+        sceneUtils.addSceneObject(loader, scene, 'carpet', activeAnimations, 'carpet')
 
         camera.position.setX(-12)
         camera.position.setY(28)
@@ -90,10 +82,7 @@ export default function GameScreen() {
                     else { emitter.updateParticles() }
                 }
 
-                for (const anim of activeAnimations) {
-                    anim.running = true
-                    anim.update()
-                }
+                for (const anim of activeAnimations) { anim.update() }
 
                 composer.render()
 
